@@ -64,7 +64,8 @@ QUIET = False
 def log_list_queues(queues):
     if RETURN_TYPE == 'text':
         for queue, counter in sorted(queues.items()):
-            logger.info("{} - {}".format(queue, counter))
+            if counter or not QUIET:
+                logger.info("{} - {}".format(queue, counter))
 
 
 def log_bot_error(status, *args):
