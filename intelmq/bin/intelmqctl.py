@@ -45,7 +45,7 @@ ERROR_MESSAGES = {
     'stopped': '{} was NOT RUNNING.',
     'stopping': '{} failed to STOP.',
     'noid': 'No or unconfigured ID was given, use --id',
-    'notfound': '{} not found.'
+    'notfound': 'Bot {} not found.'
 }
 
 LOG_LEVEL = {
@@ -423,14 +423,22 @@ Get logs of a bot:
         if self.args.action in ['start', 'restart', 'stop', 'status',
                                 'reload']:
             if self.args.parameter:
-                call_method = getattr(self, "bot_" + self.args.action)
-                results = call_method(self.args.parameter[0])
+                if self.args.parameter[0] not in self.runtime_configuration:
+                    log_bot_error('notfound', self.args.parameter[0])
+                    results = 'error'
+                else:
+                    call_method = getattr(self, "bot_" + self.args.action)
+                    results = call_method(self.args.parameter[0])
             else:
                 call_method = getattr(self, "botnet_" + self.args.action)
                 results = call_method()
         elif self.args.action == 'run':
             if self.args.parameter and len(self.args.parameter) == 1:
-                self.bot_run(self.args.parameter[0])
+                if self.args.parameter[0] not in self.runtime_configuration:
+                    log_bot_error('notfound', self.args.parameter[0])
+                    results = 'error'
+                else:
+                    results = self.bot_run(self.args.parameter[0])
             else:
                 print("Exactly one bot-id must be given for run.")
                 self.parser.print_help()
@@ -462,24 +470,17 @@ Get logs of a bot:
             print(json.dumps(results))
         if type(results) is int:
             return results
+        elif results == 'error':
+            return 1
 
     def bot_run(self, bot_id):
-        try:
-            bot_module = self.runtime_configuration[bot_id]['module']
-        except KeyError:
-            log_bot_error('notfound', bot_id)
-            return 'error'
-        else:
-            module = importlib.import_module(bot_module)
-            bot = getattr(module, 'BOT')
-            instance = bot(bot_id)
-            instance.start()
+        bot_module = self.runtime_configuration[bot_id]['module']
+        module = importlib.import_module(bot_module)
+        bot = getattr(module, 'BOT')
+        instance = bot(bot_id)
+        instance.start()
 
     def bot_start(self, bot_id):
-        if bot_id is None:
-            log_bot_error('noid')
-            return 'error'
-
         return self.bot_process_manager.bot_start(bot_id)
 
     def bot_stop(self, bot_id):
