@@ -423,14 +423,15 @@ Get logs of a bot:
         results = None
         if self.args.action in ['start', 'restart', 'stop', 'status',
                                 'reload']:
-            if self.args.parameter:
-                if self.args.parameter[0] not in self.runtime_configuration:
-                    log_bot_error('notfound', self.args.parameter[0])
+            results = []
+            for bot in self.args.parameter:
+                if bot not in self.runtime_configuration:
+                    log_bot_error('notfound', bot)
                     results = 'error'
                 else:
                     call_method = getattr(self, "bot_" + self.args.action)
-                    results = call_method(self.args.parameter[0])
-            else:
+                    results.append(call_method(bot))
+            if not self.args.parameter:
                 call_method = getattr(self, "botnet_" + self.args.action)
                 results = call_method()
         elif self.args.action == 'run':
@@ -459,11 +460,13 @@ Get logs of a bot:
                 exit(2)
             results = self.read_log(*self.args.parameter)
         elif self.args.action == 'clear':
+            results = []
+            for queue in self.args.parameter:
+                results.append(self.clear_queue(queue))
             if not self.args.parameter:
                 print("Queue name not given.")
                 self.parser.print_help()
                 exit(2)
-            results = self.clear_queue(self.args.parameter[0])
         elif self.args.action == 'check':
             results = self.check()
 
@@ -471,7 +474,7 @@ Get logs of a bot:
             print(json.dumps(results))
         if type(results) is int:
             return results
-        elif results == 'error':
+        elif 'error' in results:
             return 1
 
     def bot_run(self, bot_id):
