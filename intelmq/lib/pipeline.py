@@ -62,7 +62,6 @@ class Pipeline(object):
             elif type_ is str:
                 q = {"_default": queues.split()}
             elif type_ is dict:
-                # if "_default" not in queues: raise KeyError("Missing _default key.")
                 q = queues
                 for key, val in queues.items():
                     q[key] = val if type(val) is list else val.split()
@@ -119,7 +118,7 @@ class Redis(Pipeline):
         self.load_configurations(queues_type)
         super(Redis, self).set_queues(queues, queues_type)
 
-    def send(self, message, queue="_default"):
+    def send(self, message, path="_default"):
         message = utils.encode(message)
         try:
             queues = self.destination_queues[queue]
@@ -213,7 +212,7 @@ class Pythonlist(Pipeline):
         for destination_queue in chain.from_iterable(self.destination_queues.values()):
             self.state[destination_queue] = []
 
-    def send(self, message, queue="_default"):
+    def send(self, message, path="_default"):
         """Sends a message to the destination queues"""
         for destination_queue in self.destination_queues[queue]:
             if destination_queue in self.state:
